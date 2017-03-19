@@ -76,7 +76,7 @@ Higher number of pixes per cell performs higher prediction speed. Therefore `pix
 Also I compared one and all HOG channels, tried different color spaces and different cells per block. `All channels` performed better results. `HSV` and `YCrCb` performed better visual results than others. `cells_per_block=(2, 2)` works better than others.
 
 | Parameter | Explored from | Explored to | Best value |
-|:--- |:---:|:---:|:---:|:---:|
+| --- | --- | --- | --- |
 | orientations | 3 | 13 | **11** |
 | pixels_per_cell | 5 | 13 | **9** |
 
@@ -191,3 +191,8 @@ Here's an example result showing the heatmap from a series of frames of video, t
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
 It was hard to find a compromise between possibility of detection of small size cars and quality of detection of middle and large size cars. The classifier was trained on 64x64 images and scales lower than 1.0 generated too many false positives that not always can be controled by thresholding.
+
+
+```python
+
+```
