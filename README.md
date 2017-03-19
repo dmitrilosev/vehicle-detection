@@ -1,19 +1,7 @@
-# Vehicle Detection
-[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
+## Vehicle Detection Project
 
-In this project, your goal is to write a software pipeline to detect vehicles in a video (start with the test_video.mp4 and later implement on full project_video.mp4), but the main output or product we want you to create is a detailed writeup of the project.  Check out the [writeup template](https://github.com/udacity/CarND-Vehicle-Detection/blob/master/writeup_template.md) for this project and use it as a starting point for creating your own writeup.  
-
-Creating a great writeup:
----
-A great writeup should include the rubric points as well as your description of how you addressed each point.  You should include a detailed description of the code used in each step (with line-number references and code snippets where necessary), and links to other supporting documents or external references.  You should include images in your writeup to demonstrate how your code works with examples.  
-
-All that said, please be concise!  We're not looking for you to write a book here, just a brief description of how you passed each rubric point, and references to the relevant code :). 
-
-You can submit your writeup in markdown or use another method and submit a pdf instead.
-
-The Project
----
+### Overview
 
 The goals / steps of this project are the following:
 
@@ -24,10 +12,182 @@ The goals / steps of this project are the following:
 * Run your pipeline on a video stream (start with the test_video.mp4 and later implement on full project_video.mp4) and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
 * Estimate a bounding box for vehicles detected.
 
-Here are links to the labeled data for [vehicle](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/vehicles.zip) and [non-vehicle](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/non-vehicles.zip) examples to train your classifier.  These example images come from a combination of the [GTI vehicle image database](http://www.gti.ssr.upm.es/data/Vehicle_database.html), the [KITTI vision benchmark suite](http://www.cvlibs.net/datasets/kitti/), and examples extracted from the project video itself.   You are welcome and encouraged to take advantage of the recently released [Udacity labeled dataset](https://github.com/udacity/self-driving-car/tree/master/annotations) to augment your training data.  
+[//]: # (Image References)
+[image1]: ./output_images/car_not_car.png
+[image2]: ./output_images/hog_example.png
+[image3_1]: ./output_images/sliding_windows_1_0.png
+[image3_2]: ./output_images/sliding_windows_1_6.png
+[image4_1]: ./output_images/find_cars_1.png
+[image4_2]: ./output_images/find_cars_2.png
+[image4_3]: ./output_images/find_cars_3.png
+[image4_4]: ./output_images/find_cars_4.png
+[image4_5]: ./output_images/find_cars_5.png
+[image4_6]: ./output_images/find_cars_6.png
+[image5_1]: ./output_images/bboxes_and_heat_1.png
+[image5_2]: ./output_images/bboxes_and_heat_2.png
+[image5_3]: ./output_images/bboxes_and_heat_3.png
+[image5_4]: ./output_images/bboxes_and_heat_4.png
+[image5_5]: ./output_images/bboxes_and_heat_5.png
+[image5_6]: ./output_images/bboxes_and_heat_6.png
+[image6]: ./output_images/labels_map.png
+[image7]: ./output_images/output_bboxes.png
+[video1]: ./project_video.mp4
 
-Some example images for testing your pipeline on single frames are located in the `test_images` folder.  To help the reviewer examine your work, please save examples of the output from each stage of your pipeline in the folder called `ouput_images`, and include them in your writeup for the project by describing what each image shows.    The video called `project_video.mp4` is the video your pipeline should work well on.  
+### Histogram of Oriented Gradients (HOG)
 
-**As an optional challenge** Once you have a working pipeline for vehicle detection, add in your lane-finding algorithm from the last project to do simultaneous lane-finding and vehicle detection!
+#### 1. Explain how (and identify where in your code) you extracted HOG features from the training images.
 
-**If you're feeling ambitious** (also totally optional though), don't stop there!  We encourage you to go out and take video of your own, and show us how you would implement this project on a new video!
+The code for this step is contained in cell 1 lines 14 through 31 of the IPython notebook called [notebook.ipynb](./notebook.ipynb)).  
+
+I started by reading in all the `vehicle` and `non-vehicle` images. I used glob() function to read images maching pattern at a time. Here is an example of one of each of the `vehicle` and `non-vehicle` classes:
+
+![alt text][image1]
+
+I then explored different `skimage.hog()` parameters. I grabbed random images from each of the two classes and displayed hog images to get a feel for what the `skimage.hog()` output looks like. I ended up with parameter ranges which have better visual results. Then I trained SVC classifier multiple times with predefind parameters. Winners were to have higher correlation of test accuracy and speed of the prediction:
+
+| Orientations | Test Accuracy of SVC | 
+| ------------ |:--------------------:|
+| 3 | 0.984797 |
+| 4 | 0.991273 |
+| 5 | 0.988739 |
+| 6 | 0.991836 | 
+| 7 | 0.993525 | 
+| 8 | 0.990991 |  
+| 9 | 0.990709 |  
+| 10 | 0.992962 |  
+| 11 | **0.994651** |  
+| 12 | 0.993806 | 
+| 13 | 0.990709 |
+
+| Pixels per cell | Test Accuracy of SVC | 
+| ------------ |:--------------------:|
+| 5 | 0.989865 |
+| 6 | 0.991273 | 
+| 7 | 0.991273 | 
+| 8 | 0.990428 |  
+| 9 | **0.99268** | 
+| 10 | 0.992117 |  
+| 11 | 0.986205 |
+| 12 | 0.987894 |
+| 13 | 0.98339 |
+
+Higher number of pixes per cell performs higher prediction speed. Therefore `pixels_per_cell=(9, 9)` will give higher speed and accuracy. 
+
+Also I compared one and all HOG channels, tried different color spaces and different cells per block. `All channels` performed better results. `HSV` and `YCrCb` performed better visual results than others. `cells_per_block=(2, 2)` works better than others.
+
+| Parameter | Explored from | Explored to | Best value |
+|:--- |:---:|:---:|:---:|:---:|
+| orientations | 3 | 13 | **11** |
+| pixels_per_cell | 5 | 13 | **9** |
+
+Then I compared different spatial sizes, tested better results with different number of histogram bins and tested obtained better results with switched on Hog features. It was very often when spatial and histogram features generate many false positives and attempted to swithed off them completely. But it tunred out that SVC accuracy not reached 0.99% and I had to switch them on again.
+
+The result of choosing spatial sizes and number of histogram bins are the following:
+
+| Spatial size | Historgam bins | Hog features | Test Accuracy of SVC | 
+| ------------ |:--------------------:|:--------------------:|:--------------------:|
+| (8, 8)   | 64  | OFF | 0.957207 |
+| (8, 8)   | 128 | OFF | 0.961712 |
+| (8, 8)   | 128 | ON  | 0.992399, 0.990428 |
+| (8, 8)   | 256 | OFF | 0.950169 |
+| (16, 16) | 256 | OFF | 0.948761 |
+| (32, 32) | 64  | OFF | 0.956081 |
+| (32, 32) | 128 | OFF | 0.952703 |
+| (32, 32) | 256 | OFF | 0.961993 |
+| (32, 32) | 256 | ON  | **0.990709, 0.993243** |
+| (64, 64) | 256 | OFF | 0.949043 |
+
+And an example using the `YCrCb` color space and HOG parameters of `orientations=11`, `pixels_per_cell=(9, 9)` and `cells_per_block=(2, 2)`:
+
+![alt text][image2]
+
+#### 2. Explain how you settled on your final choice of HOG parameters.
+
+I discovered that it also important to control the balance of features of different types. And ot turned out that 12 HOG orientations worked better after increasing the number of hist_bins and spatial_size features. The result of all experiments and intuition are the following:
+
+```
+color_space = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+orient = 12  # HOG orientations
+pix_per_cell = 9 # HOG pixels per cell
+cell_per_block = 2 # HOG cells per block
+hog_channel = "ALL" # Can be 0, 1, 2, or "ALL"
+spatial_size = (32, 32) # Spatial binning dimensions
+hist_bins = 256    # Number of histogram bins
+spatial_feat = True # Spatial features on or off
+hist_feat = True # Histogram features on or off
+hog_feat = True # HOG features on or off
+```
+
+#### 3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
+
+1. I concatenated HOG features, spatial and histogram features,
+2. Normalized the data using StandarsScaler() method from sklearn package,
+3. Shuffled and splitted the data into training and testing sets using train_test_split() method from the same package,
+4. And trained a linear support vector machine classifier using LinearSVC() class
+
+### Sliding Window Search
+
+#### 1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
+
+I tested classifier with three window overlap options: 50%, 75%, 80%, visually compared results and selected 75% overlap as an option that showed better prediction results.
+
+I then implemented HOG sub-sampling window search for extracting HOG features once per image using `cells_per_step=2` (overlap of 75%). The code for this step is contained in cell 1 lines 370 through 385 of the IPython notebook called [notebook.ipynb](./notebook.ipynb)).
+
+![alt text][image3_1]
+![alt text][image3_2]
+
+#### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
+
+I separately searched on scales from 0.4 to 2.6 in order to get intuition of the quality of each scale prediction. Scales lower than 0.8 generated many false positives, which is hard to control by thresholding, scales from 0.8 to 1.0 generated moderate quantity of false positives and other scales generated contollable 0-1 false positives. I tried different combinations and stopped on series of scales `[0.6, 0.8, 1.4, 1.8, 2.6]`. 
+
+You can see how pipeline is working on test images:
+
+![alt text][image4_1]
+![alt text][image4_2]
+![alt text][image4_3]
+![alt text][image4_4]
+![alt text][image4_5]
+![alt text][image4_6]
+
+---
+
+### Video Implementation
+
+#### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
+Here's a [link to my video result (vehicles_project_video_final.mp4)](./vehicles_project_video_final.mp4)
+
+
+#### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
+
+The code for this step is contained in
+* `process_frame(image, scales, scales_threshold)` method for filtering results of finding cars on every single frame
+* `process_frames_bboxes(frames_bboxes, frames_threshold, image, visualize=True)` method for filtering reults when processing series of frames 
+
+[notebook.ipynb](./notebook.ipynb)
+
+I created a heatmap of an image, thresholded that map to identify vehicle positions, then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap and then assumed each blob corresponded to a vehicle. I constructed bounding boxes to cover the area of each blob detected.
+    
+Here's an example result showing the heatmap from a series of frames of video, the result of `scipy.ndimage.measurements.label()` and the bounding boxes then overlaid on the last frame of video:
+
+### Here are six frames and their corresponding heatmaps:
+
+![alt text][image5_1]
+![alt text][image5_2]
+![alt text][image5_3]
+![alt text][image5_4]
+![alt text][image5_5]
+![alt text][image5_6]
+
+### Here is the output of `scipy.ndimage.measurements.label()` on the integrated heatmap from all six frames:
+![alt text][image6]
+
+### Here the resulting bounding boxes are drawn onto the last frame in the series:
+![alt text][image7]
+
+---
+
+### Discussion
+
+#### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
+
+It was hard to find a compromise between possibility of detection of small size cars and quality of detection of middle and large size cars. The classifier was trained on 64x64 images and scales lower than 1.0 generated too many false positives that not always can be controled by thresholding.
