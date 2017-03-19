@@ -188,7 +188,21 @@ Here's an example result showing the heatmap from a series of frames of video, t
 
 ### Discussion
 
-#### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
+#### What could be improved about the pipeline/algorithm
+
+1. Add another kinds of features like `convex/concave`, `depth` etc.
+2. Increase training dataset for higher prediction accuracy
+3. Preprocess and augment training examples for robust vehicle detection in different road conditions (day/night, different road surfaces, shadows, lighting condition)
+4. I would like to implement modern technics like YOLO and SSD which allow to increase detection quality and speed.
+  
+#### What hypothetical cases would cause pipeline to fail
+
+1. Several false positives in one place
+2. Tree shadows, road surface and other parts of images which are similar to vehicle
+3. Small cars that is far from us
+4. Mountanious terrain because we look at restricted area of an image
+
+#### Some consideration of problems/issues faced
 
 It was hard to find a compromise between possibility of detection of small size cars and quality of detection of middle and large size cars. The classifier was trained on 64x64 images and scales lower than 1.0 generated too many false positives that not always can be controled by thresholding.
 
